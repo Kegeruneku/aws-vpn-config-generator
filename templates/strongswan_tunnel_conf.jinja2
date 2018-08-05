@@ -1,0 +1,36 @@
+{% set ike_encryption_protocol = vpn_configuration[0]['ike']['encryption_protocol'] | replace('-', '') | truncate(6, True, '', 0) %}
+#
+# /etc/ipsec.secrets
+#
+
+# {{ vpn_configuration[0]['name'] }}
+{{ vpn_configuration[0]['vpn_gateway']['tunnel_outside_address']['ip_address'] }} : PSK "{{ vpn_configuration[0]['ike']['pre_shared_key'] }}"
+
+#
+# /etc/ipsec.d/tunnels/{{ vpn_configuration[0]['name'] }}.conf
+#
+conn {{ vpn_configuration[0]['name'] }}
+	ikelifetime={{ vpn_configuration[0]['ike']['lifetime'] }}s
+	keylife={{ vpn_configuration[0]['ipsec']['lifetime'] }}s
+	rekeymargin=3m
+	keyingtries=3
+	authby=secret
+	mobike=no
+	ike={{ ike_encryption_protocol }}-{{ vpn_configuration[0]['ike']['authentication_protocol'] }}-modp1024!
+	esp={{ ike_encryption_protocol }}-{{ vpn_configuration[0]['ike']['authentication_protocol'] }}-modp1024!
+	## phase 1 ##
+	keyexchange=ikev1
+	## phase 2 ##
+	installpolicy=yes
+	compress=no
+	type=tunnel
+	aggressive={% if mode == 'agressive' -%}yes{% else -%}no{% endif %}
+	dpddelay={{ vpn_configuration[0]['ipsec']['dead_peer_detection']['interval'] }}s
+	dpdtimeout={{ vpn_configuration[0]['ipsec']['dead_peer_detection']['interval'] | int * vpn_configuration[0]['ipsec']['dead_peer_detection']['retries'] | int }}s
+	dpdaction=restart
+	leftid={{ vpn_configuration[0]['customer_gateway']['tunnel_outside_address']['ip_address'] }}
+	right={{ vpn_configuration[0]['vpn_gateway']['tunnel_outside_address']['ip_address'] }}
+	leftsubnet={{ vpn_configuration[0]['customer_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn_configuration[0]['customer_gateway']['tunnel_inside_address']['network_cidr'] }}
+	rightsubnet={{ vpn_configuration[0]['vpn_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn_configuration[0]['vpn_gateway']['tunnel_inside_address']['network_cidr'] }}
+	leftupdown="/usr/local/bin/updown.aws {{ vpn_configuration[0]['vpc_cidr_block'] }}"
+	auto=route

@@ -1,0 +1,21 @@
+remote {{ vgw_out_addr }} {
+    exchange_mode {{ mode }};
+    lifetime time {{ ike_lifetime }} seconds;
+    proposal {
+        encryption_algorithm {{ ike_encryption_protocol }};
+        hash_algorithm {{ ike_authentication_protocol }};
+        authentication_method pre_shared_key;
+        dh_group {{ ike_perfect_forward_secrecy }};
+    }
+    dpd_delay {{ dpd_delay }};
+    dpd_retry {{ dpd_retry }};
+    generate_policy off;
+}
+
+sainfo address {{ cgw_in_addr }}/{{ cgw_in_cidr }} any address {{ vgw_in_addr }}/{{ vgw_in_cidr }} any {
+    pfs_group {{ ipsec_perfect_forward_secrecy }};
+    encryption_algorithm {{ ipsec_encryption_protocol }};
+    authentication_algorithm {{ ipsec_authentication_protocol }};
+    compression_algorithm deflate;
+    lifetime time {{ ipsec_lifetime }} seconds;
+}

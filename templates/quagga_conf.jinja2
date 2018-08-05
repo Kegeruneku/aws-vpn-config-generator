@@ -1,0 +1,13 @@
+#
+# VTYSH_PAGER=/bin/cat vtysh
+#
+
+conf t
+router bgp 65023
+{%- for vpn in vpn_configuration %}
+neighbor {{ vpn['vpn_gateway']['tunnel_inside_address']['ip_address'] }} remote-as {{ vpn_configuration[0]['vpn_gateway']['bgp']['asn'] }}
+neighbor {{ vpn['vpn_gateway']['tunnel_inside_address']['ip_address'] }} description {{ vpn_configuration[0]['name'] }}-{{ loop.index }}
+neighbor {{ vpn['vpn_gateway']['tunnel_inside_address']['ip_address'] }} peer-group aws-vpc
+{% endfor %}
+end
+cop r s

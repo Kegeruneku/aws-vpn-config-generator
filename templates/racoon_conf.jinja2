@@ -1,0 +1,46 @@
+#
+# Warning, racoon is policy-based, and thus unable to use two tunnels leading to the same subnets.
+# This configuration only establishes one tunnel instead of two, beware !
+
+#
+# /etc/racoon/psk.txt
+#
+
+# {{ vpn_configuration[0]['name'] }}
+{{ vpn_configuration[0]['vpn_gateway']['tunnel_outside_address']['ip_address'] }} {{ vpn_configuration[0]['ike']['pre_shared_key'] }}
+
+#
+# /etc/racoon/racoon.conf
+#
+
+# {{ vpn_configuration[0]['name'] }}
+remote {{ vpn_configuration[0]['vpn_gateway']['tunnel_outside_address']['ip_address'] }} {
+    exchange_mode {{ vpn_configuration[0]['ike']['mode'] }};
+    lifetime time {{ vpn_configuration[0]['ike']['lifetime'] }} seconds;
+    proposal {
+        encryption_algorithm {{ ike_encryption_protocol }};
+        hash_algorithm {{ ike_authentication_protocol }};
+        authentication_method pre_shared_key;
+        dh_group {{ vpn_configuration[0]['ike']['perfect_forward_secrecy'][-1] }};
+    }
+    dpd_delay {{ vpn_configuration[0]['ipsec']['dead_peer_detection']['interval'] }};
+    dpd_retry {{ vpn_configuration[0]['ipsec']['dead_peer_detection']['interval'] | int * vpn_configuration[0]['ipsec']['dead_peer_detection']['retries'] | int }};
+    generate_policy off;
+}
+
+sainfo address {{ vpn_configuration[0]['customer_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn_configuration[0]['customer_gateway']['tunnel_inside_address']['network_cidr'] }} any address {{ vpn_configuration[0]['vpn_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn_configuration[0]['vpn_gateway']['tunnel_inside_address']['network_cidr'] }} any address
+    pfs_group {{ vpn_configuration[0]['ipsec']['perfect_forward_secrecy'][-1] }};
+    encryption_algorithm {{ ipsec_encryption_protocol }};
+    authentication_algorithm {{ ipsec_authentication_protocol }};
+    compression_algorithm deflate;
+    lifetime time {{ vpn_configuration[0]['ipsec']['lifetime'] }} seconds;
+}
+
+#
+# /etc/ipsec.conf
+#
+
+spdadd {{ vpn_configuration[0]['customer_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn_configuration[0]['customer_gateway']['tunnel_inside_address']['network_cidr'] }} {{ vpn_configuration[0]['vpn_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn_configuration[0]['vpn_gateway']['tunnel_inside_address']['network_cidr'] }} any -P out ipsec
+    esp/tunnel/{{ vpn_configuration[0]['customer_gateway']['tunnel_outside_address']['ip_address'] }}-{{ vpn_configuration[0]['vpn_gateway']['tunnel_outside_address']['ip_address'] }}/require;
+spdadd {{ vpn_configuration[0]['vpn_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn_configuration[0]['vpn_gateway']['tunnel_inside_address']['network_cidr'] }} {{ vpn_configuration[0]['customer_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn_configuration[0]['customer_gateway']['tunnel_inside_address']['network_cidr'] }} any -P in ipsec
+    esp/tunnel/{{ vpn_configuration[0]['vpn_gateway']['tunnel_outside_address']['ip_address'] }}-{{ vpn_configuration[0]['customer_gateway']['tunnel_outside_address']['ip_address'] }}/require;

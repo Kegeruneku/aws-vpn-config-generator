@@ -1,0 +1,18 @@
+#
+# /etc/ipsec.secrets
+#
+
+# {{ vpn_configuration[0]['name'] }}
+{%- for vpn in vpn_configuration %}
+{{ vpn['vpn_gateway']['tunnel_outside_address']['ip_address'] }} : PSK "{{ vpn['ike']['pre_shared_key'] }}"{% endfor %}
+
+#
+# /etc/ipsec.d/tunnels/{{ vpn_configuration[0]['name'] }}.conf
+#
+{%- for vpn in vpn_configuration %}
+conn {{ vpn_configuration[0]['name'] }}-{{ loop.index }}
+    leftid={{ vpn['customer_gateway']['tunnel_outside_address']['ip_address'] }}
+    right={{ vpn['vpn_gateway']['tunnel_outside_address']['ip_address'] }}
+    mark={{ range(1, 512) | random }}
+    leftupdown=/usr/local/libexec/strongswan-setup-vti.sh {{ vpn['customer_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn['customer_gateway']['tunnel_inside_address']['network_cidr'] }} {{ vpn['vpn_gateway']['tunnel_inside_address']['ip_address'] }}/{{ vpn['vpn_gateway']['tunnel_inside_address']['network_cidr'] }}
+{% endfor %}

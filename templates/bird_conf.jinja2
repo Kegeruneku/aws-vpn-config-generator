@@ -1,0 +1,8 @@
+#
+# /etc/bird/conf.d/{{ vpn_configuration[0]['name'] }}.conf
+#
+{%- for vpn in vpn_configuration %}
+protocol bgp {{ vpn_configuration[0]['name'] | replace("-", "_") }}_{{ loop.index }} from aws_vpn {
+	neighbor {{ vpn['vpn_gateway']['tunnel_inside_address']['ip_address'] }} as {{ vpn['vpn_gateway']['bgp']['asn'] }};
+}
+{% endfor %}

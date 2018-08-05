@@ -1,0 +1,13 @@
+{# 
+  cgw_in_addr: customer_gateway tunnel_inside_address ip_address
+  cgw_in_cidr: customer_gateway tunnel_inside_address network_cidr
+  vgw_in_addr: vpn_gateway tunnel_inside_address ip_address
+  vgw_in_cidr: vpn_gateway tunnel_inside_address network_cidr
+  cgw_out_addr: customer_gateway tunnel_outside_address
+  vgw_out_addr: vpn_gateway tunnel_outside_address
+-#}
+
+spdadd {{ cgw_in_addr }}/{{ cgw_in_cidr }} {{ vgw_in_addr }}/{{ vgw_in_cidr }} any -P out ipsec
+   esp/tunnel/{{ cgw_out_addr }}-{{ vgw_out_addr }}/require;
+spdadd {{ vgw_in_addr }}/{{ vgw_in_cidr }} {{ cgw_in_addr }}/{{ cgw_in_cidr }} any -P in ipsec
+   esp/tunnel/{{ vgw_out_addr }}-{{ cgw_out_addr }}/require;
